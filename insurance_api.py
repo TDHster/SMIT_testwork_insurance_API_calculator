@@ -1,3 +1,5 @@
+#insurance_api.py
+
 from fastapi import FastAPI, HTTPException, Depends, Header
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -8,8 +10,8 @@ import json
 import socket
 
 # Инициализация базы данных
-DATABASE_URL = "sqlite:///./tariffs.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tariffs.db")
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -128,6 +130,11 @@ def add_tariffs(
         return {"message": "Data successfully saved"}
     except Exception as e:
         db.rollback()
+        log_change_to_kafka(
+                user_id=x_user_id,
+                action="add",
+                message=f"Error {e}"
+            )
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/delete_tariff/{tariff_id}")
@@ -139,6 +146,11 @@ def delete_tariff(
     try:
         tariff = db.query(Tariff).filter(Tariff.id == tariff_id).first()
         if not tariff:
+            log_change_to_kafka(
+                user_id=x_user_id,
+                action="delete",
+                message=f"Tariff not found"
+            )
             raise HTTPException(status_code=404, detail="Тариф не найден")
 
         db.delete(tariff)
