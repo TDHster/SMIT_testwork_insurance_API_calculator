@@ -3,3 +3,4 @@ fastapi
 SQLAlchemy
 requests
 uvicorn
+python-dotenv

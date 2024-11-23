@@ -8,7 +8,10 @@ from datetime import datetime
 from confluent_kafka import Producer, KafkaException, KafkaError
 import json
 import socket
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 # Инициализация базы данных
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tariffs.db")
